@@ -1,0 +1,47 @@
+flowchart TB
+  analyst["Analyst<br/>[Person]<br/>Head office"]:::person
+  manager["Branch Manager<br/>[Person]<br/>PNH, REP, BTB"]:::person
+  ops["Operations Person<br/>[Person]<br/>Operations"]:::person
+
+  pos["Branch POS Systems<br/>[External System, x3]<br/>Daily POS file uploads"]:::external
+  mail["E-mail Service<br/>[External System]<br/>Corporate SMTP relay"]:::external
+
+  subgraph boundary["Monthly Sales Report System [System Boundary]"]
+    landing["Landing Zone<br/>[File System / SFTP Chroot]<br/>Receives and stages daily branch CSV extracts"]:::containerDb
+
+    ingest["Ingest Job<br/>[Java CLI / Scheduled Service]<br/>Validates schema, detects missing branch files, and tracks ingest status"]:::container
+
+    engine["Report Batch Engine<br/>[Java Streaming Engine & Template Renderers]<br/>Aggregates metrics via parallel streams and renders monthly reports"]:::container
+
+    store["Report Store<br/>[File System & SQLite/Relational DB]<br/>Stores normalized sales figures, audit logs, and generated report artifacts"]:::containerDb
+
+    desktop["Desktop Viewer<br/>[JavaFX Application]<br/>Desktop UI for head-office analyst to view aggregates and export files"]:::containerApp
+
+    web["Web Report Page<br/>[Web Application / Java HTTP Service]<br/>Role-gated portal for branch managers to inspect branch-specific reports"]:::containerApp
+  end
+
+  %% Ingestion flow
+  pos -- "Uploads daily CSV files [SFTP]" --> landing
+  landing -- "Reads raw branch CSVs [file system]" --> ingest
+  ingest -- "Persists validated sales data & missing flags [JDBC/SQL]" --> store
+  ingest -- "Sends missing-file alerts [SMTP]" --> mail
+
+  %% Batch generation flow
+  engine -- "Reads sales figures and flags [JDBC/SQL]" --> store
+  engine -- "Writes generated reports and audit logs [file system / SQL]" --> store
+  engine -- "Dispatches run status and ready events [SMTP]" --> mail
+
+  %% User interactions
+  analyst -- "Queries aggregate reports and exports files [JDBC/TLS]" --> desktop
+  desktop -- "Reads sales figures and report artifacts [file system / JDBC]" --> store
+
+  manager -- "Requests branch report [HTTPS]" --> web
+  web -- "Queries branch report with branch isolation check [JDBC/SQL]" --> store
+
+  ops -- "Inspects run health, flags, and triggers retries [HTTPS / CLI]" --> ingest
+
+  classDef person fill:#08427b,color:#ffffff,stroke:#052e56
+  classDef external fill:#8a8a8a,color:#ffffff,stroke:#6b6b6b
+  classDef container fill:#1168bd,color:#ffffff,stroke:#0b4884
+  classDef containerApp fill:#2a75d3,color:#ffffff,stroke:#1168bd
+  classDef containerDb fill:#1b4f8a,color:#ffffff,stroke:#0b4884

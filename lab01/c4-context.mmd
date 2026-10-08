@@ -1,0 +1,24 @@
+flowchart TB
+  analyst["Analyst<br/>[Person]<br/>Head office; views aggregate sales and exports reports"]:::person
+  manager["Branch Manager<br/>[Person]<br/>PNH, REP, BTB; views own branch report only"]:::person
+  director["Finance Director<br/>[Person]<br/>Head office; reviews totals, audit trails, and tax rules"]:::person
+  ops["Operations Person<br/>[Person]<br/>Monitors 06:00 scheduled runs, retries, and alerts"]:::person
+
+  sys["Monthly Sales Report System<br/>[Software System]<br/>Ingests branch POS data, aggregates monthly sales, and serves secure reports"]:::system
+
+  pos["Branch POS Systems<br/>[External System, x3]<br/>Daily transaction extracts from PNH, REP, and BTB"]:::external
+  mail["E-mail Service<br/>[External System]<br/>Corporate SMTP mail relay"]:::external
+
+  analyst -- "Views and exports cross-branch reports" --> sys
+  manager -- "Views own branch report" --> sys
+  director -- "Receives monthly digests and audit summaries" --> sys
+  ops -- "Monitors job execution and triggers retries" --> sys
+
+  pos -- "Uploads daily sales CSV files" --> sys
+  sys -- "Sends status alerts and report digests" --> mail
+  mail -- "Delivers notifications and digests" --> director
+  mail -- "Delivers run failure/retry alerts" --> ops
+
+  classDef person fill:#08427b,color:#ffffff,stroke:#052e56
+  classDef system fill:#1168bd,color:#ffffff,stroke:#0b4884
+  classDef external fill:#8a8a8a,color:#ffffff,stroke:#6b6b6b
