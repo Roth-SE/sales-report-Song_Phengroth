@@ -1,10 +1,16 @@
 package edu.itc.salesreport.model;
 
 import java.time.YearMonth;
-import java.util.Map;
+import java.util.List;
 
-public record MonthlyReport(YearMonth month, Map<String, BranchSummary> branchSummaries) {
+public record MonthlyReport(
+        YearMonth month, 
+        List<BranchSummary> branches, 
+        BranchSummary chain, 
+        List<String> topPerformers // or generic string list expected by the 4th arg
+) {
     public MonthlyReport {
-        branchSummaries = Map.copyOf(branchSummaries); // Information hiding
+        branches = List.copyOf(branches);
+        topPerformers = List.copyOf(topPerformers);
     }
 }
