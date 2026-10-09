@@ -1,13 +1,14 @@
 package edu.itc.salesreport.model;
 
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 class SaleTransactionTest {
 
@@ -23,23 +24,27 @@ class SaleTransactionTest {
     @Test
     void branchSummaryTopProductsIsUnmodifiable() {
         List<ProductTotal> mutableList = new ArrayList<>();
-        mutableList.add(new ProductTotal("S1", "P1", 10, new BigDecimal("100.00")));
+        // Updated to new signature: sku, productName, revenue, quantity
+        mutableList.add(new ProductTotal("S1", "P1", new BigDecimal("100.00"), 10));
 
-        var summary = new BranchSummary("PNH", new BigDecimal("100.00"), 5, mutableList);
+        // Updated to new signature: branch, revenue, discounts, receipts, byCategory, topProducts, byPaymentMethod
+        var summary = new BranchSummary("PNH", new BigDecimal("100.00"), BigDecimal.ZERO, 5, 
+                                        Map.of(), mutableList, Map.of());
 
         // Prove the internal collection rejects mutations
         assertThrows(UnsupportedOperationException.class, () -> {
-            summary.topProducts().add(new ProductTotal("S2", "P2", 1, new BigDecimal("10.00")));
+            summary.topProducts().add(new ProductTotal("S2", "P2", new BigDecimal("10.00"), 1));
         });
 
         // Prove changes to the original list don't leak into the record
-        mutableList.add(new ProductTotal("S3", "P3", 2, new BigDecimal("20.00")));
+        mutableList.add(new ProductTotal("S3", "P3", new BigDecimal("20.00"), 2));
         assertEquals(1, summary.topProducts().size());
     }
 
     @Test
     void branchSummaryAverageBasketHandlesZeroReceipts() {
-        var summary = new BranchSummary("PNH", BigDecimal.ZERO, 0, List.of());
+        var summary = new BranchSummary("PNH", BigDecimal.ZERO, BigDecimal.ZERO, 0, 
+                                        Map.of(), List.of(), Map.of());
         assertEquals(new BigDecimal("0.00"), summary.averageBasket());
     }
 }
